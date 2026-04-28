@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EtuSpend | Analyse des habitudes de dépenses des étudiants</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0a0c15;
+            color: #eef2ff;
+            overflow-x: hidden;
+        }
+
+        /* Canvas Background Animation */
+        #canvas-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -2;
+            background: linear-gradient(135deg, #0a0f1f 0%, #0a1128 50%, #0a0f2a 100%);
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.4;
+        }
+
+        /* Glassmorphism Navbar */
+        .glass-nav {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 1200px;
+            background: rgba(15, 25, 45, 0.7);
+            backdrop-filter: blur(20px);
+            border-radius: 80px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.8rem 2rem;
+            z-index: 1000;
+            transition: all 0.3s ease;
+        }
+
+        .glass-nav.scrolled {
+            top: 0;
+            border-radius: 0 0 30px 30px;
+            width: 100%;
+            background: rgba(8, 12, 25, 0.95);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .nav-inner {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+        }
+
+        .logo-icon {
+            width: 45px;
+            height: 45px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .logo-text h2 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #a5b4fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            margin: 0;
+        }
+
+        .logo-text span {
+            font-size: 0.65rem;
+            color: #8b9dc3;
+            letter-spacing: 2px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 0.5rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            padding: 8px 20px;
+            border-radius: 40px;
+            color: #cbd5e6;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+        }
+
+        /* Hero Section New Design */
+        .hero-new {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            padding: 6rem 2rem 4rem;
+            position: relative;
+        }
+
+        .hero-container {
+            max-width: 1300px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(99, 102, 241, 0.2);
+            border: 1px solid rgba(99, 102, 241, 0.4);
+            padding: 0.5rem 1.2rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #a5b4fc;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 1.5rem;
+            background: linear-gradient(135deg, #ffffff, #a5b4fc, #c4b5fd);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .hero-title .gradient-text {
+            background: linear-gradient(135deg, #818cf8, #c084fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .hero-desc {
+            font-size: 1.05rem;
+            color: #9ca3af;
+            line-height: 1.7;
+            margin-bottom: 2rem;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-bottom: 2.5rem;
+        }
+
+        .btn-glow {
+            padding: 12px 28px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary-glow {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            box-shadow: 0 5px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-primary-glow:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(99, 102, 241, 0.6);
+        }
+
+        .btn-outline-glow {
+            background: transparent;
+            border: 1.5px solid rgba(139, 92, 246, 0.6);
+            color: #c4b5fd;
+        }
+
+        .btn-outline-glow:hover {
+            background: rgba(139, 92, 246, 0.1);
+            border-color: #8b5cf6;
+            transform: translateY(-3px);
+        }
+
+        .stats-grid {
+            display: flex;
+            gap: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #eef2ff, #a5b4fc);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            margin-top: 5px;
+        }
+
+        /* Floating Stats Cards */
+        .floating-cards {
+            position: relative;
+            height: 450px;
+        }
+
+        .float-card {
+            position: absolute;
+            background: rgba(20, 30, 55, 0.7);
+            backdrop-filter: blur(15px);
+            border-radius: 24px;
+            padding: 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .float-card:nth-child(1) {
+            top: 0;
+            right: 20px;
+            width: 200px;
+            animation-delay: 0s;
+        }
+        .float-card:nth-child(2) {
+            top: 120px;
+            left: 0;
+            width: 220px;
+            animation-delay: 1s;
+        }
+        .float-card:nth-child(3) {
+            bottom: 40px;
+            right: 60px;
+            width: 200px;
+            animation-delay: 2s;
+        }
+        .float-card:nth-child(4) {
+            bottom: 140px;
+            left: 80px;
+            width: 180px;
+            animation-delay: 1.5s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+
+        .float-card .card-icon {
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .float-card .card-title {
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+        }
+
+        .float-card .card-value {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: #a5b4fc;
+        }
+
+        /* Features Section */
+        .features-section-new {
+            padding: 5rem 2rem;
+            background: rgba(10, 12, 21, 0.8);
+        }
+
+        .section-header-new {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .section-tag {
+            display: inline-block;
+            background: rgba(99, 102, 241, 0.15);
+            padding: 0.4rem 1.2rem;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            color: #818cf8;
+            margin-bottom: 1rem;
+        }
+
+        .section-title-new {
+            font-size: 2.3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .features-grid-new {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            max-width: 1300px;
+            margin: 0 auto;
+        }
+
+        .feature-card-new {
+            background: rgba(20, 30, 55, 0.5);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 2rem;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            transition: all 0.3s;
+        }
+
+        .feature-card-new:hover {
+            transform: translateY(-8px);
+            border-color: rgba(99, 102, 241, 0.4);
+            background: rgba(30, 40, 65, 0.6);
+        }
+
+        .feature-icon-new {
+            width: 55px;
+            height: 55px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 1.2rem;
+        }
+
+        .feature-card-new h3 {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 0.8rem;
+        }
+
+        .feature-card-new p {
+            font-size: 0.85rem;
+            color: #9ca3af;
+            line-height: 1.6;
+        }
+
+        /* How It Works - Timeline */
+        .timeline-section {
+            padding: 5rem 2rem;
+            background: linear-gradient(180deg, #0a0c15, #0f1222);
+        }
+
+        .timeline-grid {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+
+        .timeline-step {
+            flex: 1;
+            min-width: 200px;
+            text-align: center;
+            padding: 2rem;
+            position: relative;
+        }
+
+        .step-circle {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin: 0 auto 1.2rem;
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.4);
+        }
+
+        .timeline-step h3 {
+            font-size: 1.2rem;
+            margin-bottom: 0.8rem;
+        }
+
+        .timeline-step p {
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        /* CTA Section */
+        .cta-new {
+            padding: 4rem 2rem;
+            text-align: center;
+            background: linear-gradient(135deg, #0a0f1f, #0f1225);
+            border-top: 1px solid rgba(255,255,255,0.05);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .cta-new h2 {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .cta-new p {
+            color: #9ca3af;
+            margin-bottom: 2rem;
+        }
+
+        /* Footer */
+        .footer-new {
+            padding: 3rem 2rem;
+            background: #080b14;
+            text-align: center;
+        }
+
+        .footer-links-new {
+            display: flex;
+            justify-content: center;
+            gap: 2rem;
+            flex-wrap: wrap;
+            margin-bottom: 2rem;
+        }
+
+        .footer-links-new a {
+            color: #9ca3af;
+            text-decoration: none;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+
+        .footer-links-new a:hover {
+            color: #a5b4fc;
+        }
+
+        .copyright {
+            font-size: 0.75rem;
+            color: #6b7280;
+        }
+
+        /* Other sections */
+        .app-section {
+            display: none;
+            padding-top: 100px;
+            min-height: 100vh;
+            background: #0a0c15;
+        }
+        .app-section.active {
+            display: block;
+        }
+        .modal-content {
+            background: #1a1f2e;
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 24px;
+        }
+        .modal-header {
+            border-bottom-color: rgba(255,255,255,0.1);
+            background: #0f1422;
+        }
+        .form-control, .form-select {
+            background: #0f1422;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+        }
+        .form-control:focus, .form-select:focus {
+            background: #1a1f2e;
+            border-color: #6366f1;
+            color: white;
+        }
+        .card {
+            background: #131828;
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+        }
+        .result-text {
+            background: #131828;
+            border: 1px solid rgba(99,102,241,0.3);
+        }
+        .btn-success {
+            background: #10b981;
+        }
+
+        @media (max-width: 968px) {
+            .hero-container {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+            .hero-title {
+                font-size: 2.2rem;
+            }
+            .stats-grid {
+                justify-content: center;
+            }
+            .floating-cards {
+                display: none;
+            }
+            .glass-nav {
+                width: 95%;
+                padding: 0.5rem 1rem;
+            }
+            .nav-links {
+                gap: 0.2rem;
+            }
+            .nav-link {
+                padding: 6px 12px;
+                font-size: 0.8rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<canvas id="particleCanvas"></canvas>
+<div id="canvas-bg"></div>
+
+<nav class="glass-nav" id="navbar">
+    <div class="nav-inner">
+        <div class="logo" onclick="showAccueil()">
+            <div class="logo-icon">💰</div>
+            <div class="logo-text">
+                <h2>EtuSpend</h2>
+                <span>ANALYSE DÉPENSES</span>
+            </div>
+        </div>
+        <div class="nav-links">
+            <div class="nav-link active" id="nav-accueil" onclick="showAccueil()">Accueil</div>
+            <div class="nav-link" data-bs-toggle="modal" data-bs-target="#collecteModal">Collecte</div>
+            <div class="nav-link" id="nav-dashboard" onclick="showDashboard()">Dashboard</div>
+            <div class="nav-link" id="nav-stats" onclick="showStatistiques()">Statistiques</div>
+        </div>
+    </div>
+</nav>
+
+<!-- NOUVELLE PAGE D'ACCUEIL COMPLÈTEMENT DIFFÉRENTE -->
+<div id="accueil-section">
+    <!-- Hero Section Nouveau Design -->
+    <section class="hero-new">
+        <div class="hero-container">
+            <div class="hero-left">
+                <div class="hero-badge">
+                    <i class="bi bi-graph-up"></i>
+                    <span>Analyse en temps réel</span>
+                </div>
+                <h1 class="hero-title">
+                    Comprendre les<br>
+                    <span class="gradient-text">habitudes de dépenses</span><br>
+                    des étudiants
+                </h1>
+                <p class="hero-desc">
+                    Outil d'analyse intelligent qui révèle les tendances de consommation, 
+                    identifie les leviers d'économie et aide à mieux gérer son budget étudiant.
+                </p>
+                <div class="hero-buttons">
+                    <button class="btn-glow btn-primary-glow" data-bs-toggle="modal" data-bs-target="#collecteModal">
+                        <i class="bi bi-plus-circle"></i> Commencer l'analyse
+                    </button>
+                    <button class="btn-glow btn-outline-glow" onclick="showDashboard()">
+                        <i class="bi bi-speedometer2"></i> Explorer le dashboard
+                    </button>
+                </div>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <div class="stat-number" id="stat-etudiants">—</div>
+                        <div class="stat-label">Étudiants suivis</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="stat-depenses">—</div>
+                        <div class="stat-label">Dépenses moy. (€)</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number" id="stat-revenus">—</div>
+                        <div class="stat-label">Revenus moy. (€)</div>
+                    </div>
+                </div>
+            </div>
+            <div class="hero-right">
+                <div class="floating-cards">
+                    <div class="float-card">
+                        <div class="card-icon">📊</div>
+                        <div class="card-title">Taux d'épargne moyen</div>
+                        <div class="card-value" id="float-ratio">—%</div>
+                    </div>
+                    <div class="float-card">
+                        <div class="card-icon">🎓</div>
+                        <div class="card-title">Étudiants boursiers</div>
+                        <div class="card-value" id="float-boursiers">—%</div>
+                    </div>
+                    <div class="float-card">
+                        <div class="card-icon">🍔</div>
+                        <div class="card-title">Poste dépense #1</div>
+                        <div class="card-value" id="float-top-cat">—</div>
+                    </div>
+                    <div class="float-card">
+                        <div class="card-icon">📈</div>
+                        <div class="card-title">Corrélation R²</div>
+                        <div class="card-value">0.87</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section-new">
+        <div class="section-header-new">
+            <div class="section-tag">🔥 Fonctionnalités avancées</div>
+            <h2 class="section-title-new">Analyse complète des dépenses</h2>
+            <p style="color:#9ca3af;">Des outils puissants basés sur le Machine Learning</p>
+        </div>
+        <div class="features-grid-new">
+            <div class="feature-card-new">
+                <div class="feature-icon-new">📝</div>
+                <h3>Collecte intelligente</h3>
+                <p>Enregistrement structuré des revenus et dépenses par catégorie (logement, alimentation, loisirs, transports, études).</p>
+            </div>
+            <div class="feature-card-new">
+                <div class="feature-icon-new">📉</div>
+                <h3>Régression linéaire</h3>
+                <p>Modélisation de la relation entre revenus et dépenses avec calcul du coefficient R².</p>
+            </div>
+            <div class="feature-card-new">
+                <div class="feature-icon-new">🔗</div>
+                <h3>Matrice de corrélation</h3>
+                <p>Visualisation des relations entre toutes les catégories de dépenses.</p>
+            </div>
+            <div class="feature-card-new">
+                <div class="feature-icon-new">🧩</div>
+                <h3>Clustering K-means</h3>
+                <p>Segmentation automatique des profils d'étudiants selon leurs habitudes.</p>
+            </div>
+            <div class="feature-card-new">
+                <div class="feature-icon-new">🎯</div>
+                <h3>Classification supervisée</h3>
+                <p>Prédiction du niveau d'étude basée sur le ratio dépenses/revenus.</p>
+            </div>
+            <div class="feature-card-new">
+                <div class="feature-icon-new">📥</div>
+                <h3>Export CSV</h3>
+                <p>Téléchargement facile de toutes les données pour analyse externe.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works - Style Timeline -->
+    <section class="timeline-section">
+        <div class="section-header-new">
+            <div class="section-tag">⚡ Processus simple</div>
+            <h2 class="section-title-new">Comment ça fonctionne ?</h2>
+        </div>
+        <div class="timeline-grid">
+            <div class="timeline-step">
+                <div class="step-circle">1</div>
+                <h3>Collecte des données</h3>
+                <p>Saisie rapide des revenus et dépenses mensuelles par catégorie</p>
+            </div>
+            <div class="timeline-step">
+                <div class="step-circle">2</div>
+                <h3>Analyse automatique</h3>
+                <p>Calcul des statistiques et génération des visualisations interactives</p>
+            </div>
+            <div class="timeline-step">
+                <div class="step-circle">3</div>
+                <h3>Recommandations</h3>
+                <p>Obtenez des insights personnalisés pour optimiser votre budget</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-new">
+        <h2>Prêt à analyser vos dépenses ?</h2>
+        <p>Rejoignez les étudiants qui optimisent déjà leur budget</p>
+        <button class="btn-glow btn-primary-glow" data-bs-toggle="modal" data-bs-target="#collecteModal" style="font-size: 1rem;">
+            <i class="bi bi-rocket-takeoff"></i> Commencer gratuitement
+        </button>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer-new">
+        <div class="footer-links-new">
+            <a onclick="showAccueil()">Accueil</a>
+            <a onclick="showDashboard()">Dashboard</a>
+            <a onclick="showStatistiques()">Statistiques</a>
+            <a>Documentation</a>
+            <a>Contact</a>
+        </div>
+        <div class="copyright">
+            <p>&copy; 2024 EtuSpend · Analyse des habitudes de dépenses des étudiants · INF 232 EC2</p>
+        </div>
+    </footer>
+</div>
+
+<!-- Dashboard Section (identique fonctionnellement) -->
+<div id="section-dashboard" class="app-section">
+    <div class="container py-4">
+        <h2 class="fw-bold mb-4" style="color:#818cf8;">📊 Tableau de bord - Dépenses étudiantes</h2>
+        <div class="row mb-4" id="summary-cards"></div>
+        <div class="card p-3 mb-4"><h5 class="fw-bold">🔗 Matrice de corrélation des dépenses</h5><div id="heatmapCorr" class="plot-container" style="min-height: 400px;"></div></div>
+        <div class="card p-3 mb-4"><h5 class="fw-bold">📊 Répartition moyenne des dépenses</h5><div id="pieChart" class="plot-container" style="height:450px;"></div></div>
+        <div class="card p-3 mb-4"><h5 class="fw-bold">📉 Régression linéaire (Revenus vs Dépenses)</h5><div id="lrPlot" style="height:400px;"></div><div id="lrResult" class="result-text mt-3"></div></div>
+        <div class="card p-3 mb-4"><h5 class="fw-bold">🎯 Classification par niveau d'étude</h5><button class="btn btn-primary mb-2" onclick="runClassification()" style="background:#6366f1;">⚙️ Entraîner le modèle</button><div id="classifResult" class="result-text"></div></div>
+        <div class="card p-3 mb-4"><h5 class="fw-bold">🧩 Clustering K-means</h5><div class="row"><div class="col-md-3"><label>K</label><input type="number" id="kValue" class="form-control" value="3" min="2" max="6"></div><div class="col-md-3"><button class="btn btn-primary mt-4" onclick="runKMeans()" style="background:#6366f1;">Exécuter</button></div></div><div id="kmeansPlot" style="height:420px;"></div><div id="kmeansResult" class="result-text mt-2"></div></div>
+        <div class="card p-3"><h5 class="fw-bold mb-3">👥 Étudiants enregistrés</h5><input type="text" id="etudiantSearch" class="form-control mb-3" placeholder="Rechercher par nom..."><div id="etudiantTableContainer"></div></div>
+    </div>
+</div>
+
+<div id="section-statistiques" class="app-section">
+    <div class="container py-5">
+        <h2 class="fw-bold mb-4 text-center" style="color:#818cf8;">📐 Analyse descriptive détaillée</h2>
+        <div class="card p-4"><div id="stats-content"><p class="text-muted text-center">Chargement...</p></div></div>
+        <div class="text-center mt-4"><a href="/api/export/csv" class="btn btn-success">📥 Exporter CSV</a></div>
+    </div>
+</div>
+
+<!-- Modal Collecte -->
+<div class="modal fade" id="collecteModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">📝 Formulaire d'enregistrement</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+            <div class="modal-body">
+                <div id="alertBoxModal" class="d-none mb-4"></div>
+                <form id="depenseFormModal">
+                    <div class="mb-4"><h6 style="color:#818cf8;">👤 Informations personnelles</h6></div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4"><label>Nom complet</label><input type="text" class="form-control" id="nomModal" required></div>
+                        <div class="col-md-2"><label>Âge</label><input type="number" class="form-control" id="ageModal" required></div>
+                        <div class="col-md-3"><label>Sexe</label><select class="form-select" id="sexeModal"><option value="F">Femme</option><option value="M">Homme</option></select></div>
+                        <div class="col-md-3"><label>Niveau</label><select class="form-select" id="niveauModal"><option>L1</option><option>L2</option><option>L3</option><option>M1</option><option>M2</option></select></div>
+                        <div class="col-md-4"><label>Ville</label><input type="text" class="form-control" id="villeModal"></div>
+                        <div class="col-md-4"><label>Revenus mensuels (€)</label><input type="number" class="form-control" id="revenusModal" required></div>
+                        <div class="col-md-4"><label>Boursier</label><select class="form-select" id="boursierModal"><option value="false">Non</option><option value="true">Oui</option></select></div>
+                    </div>
+                    <div class="mb-4"><h6 style="color:#818cf8;">💸 Dépenses mensuelles (€)</h6></div>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-4"><label>🏠 Logement</label><input type="number" class="form-control" id="logementModal" value="0"></div>
+                        <div class="col-md-4"><label>🍔 Alimentation</label><input type="number" class="form-control" id="alimentationModal" value="0"></div>
+                        <div class="col-md-4"><label>🚗 Transports</label><input type="number" class="form-control" id="transportsModal" value="0"></div>
+                        <div class="col-md-4"><label>🎮 Loisirs</label><input type="number" class="form-control" id="loisirsModal" value="0"></div>
+                        <div class="col-md-4"><label>📚 Études</label><input type="number" class="form-control" id="etudesModal" value="0"></div>
+                        <div class="col-md-4"><label>📦 Autres</label><input type="number" class="form-control" id="autresModal" value="0"></div>
+                    </div>
+                    <button type="submit" class="btn w-100" style="background:#6366f1; color:white; padding:12px;">💾 Enregistrer</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Particle Animation
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    let particles = [];
+    const particleCount = 80;
+
+    for (let i = 0; i < particleCount; i++) {
+        particles.push({
+            x: Math.random() * canvas.width,
+            y: Math.random() * canvas.height,
+            radius: Math.random() * 2 + 1,
+            vx: (Math.random() - 0.5) * 0.5,
+            vy: (Math.random() - 0.5) * 0.5,
+            alpha: Math.random() * 0.3 + 0.1
+        });
+    }
+
+    function animateParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let p of particles) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(99, 102, 241, ${p.alpha})`;
+            ctx.fill();
+            p.x += p.vx;
+            p.y += p.vy;
+            if (p.x < 0) p.x = canvas.width;
+            if (p.x > canvas.width) p.x = 0;
+            if (p.y < 0) p.y = canvas.height;
+            if (p.y > canvas.height) p.y = 0;
+        }
+        requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+    window.addEventListener('resize', () => {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    });
+
+    // Navbar scroll
+    window.addEventListener('scroll', () => {
+        const navbar = document.getElementById('navbar');
+        if (window.scrollY > 50) navbar.classList.add('scrolled');
+        else navbar.classList.remove('scrolled');
+    });
+
+    let allEtudiants = [];
+    let dashboardLoaded = false, statistiquesLoaded = false;
+
+    function hideAllSections() {
+        document.getElementById('accueil-section').style.display = 'none';
+        document.querySelectorAll('.app-section').forEach(el => el.classList.remove('active'));
+    }
+
+    function showAccueil() {
+        hideAllSections();
+        document.getElementById('accueil-section').style.display = 'block';
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.getElementById('nav-accueil').classList.add('active');
+        window.scrollTo({ top: 0 });
+    }
+
+    function showDashboard() {
+        hideAllSections();
+        document.getElementById('section-dashboard').classList.add('active');
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.getElementById('nav-dashboard').classList.add('active');
+        if (!dashboardLoaded) { loadDashboard(); dashboardLoaded = true; }
+    }
+
+    function showStatistiques() {
+        hideAllSections();
+        document.getElementById('section-statistiques').classList.add('active');
+        document.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+        document.getElementById('nav-stats').classList.add('active');
+        if (!statistiquesLoaded) { loadStatistiques(); statistiquesLoaded = true; }
+    }
+
+    // Formulaire
+    document.getElementById('depenseFormModal').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const data = {
+            nom: document.getElementById('nomModal').value,
+            age: document.getElementById('ageModal').value,
+            sexe: document.getElementById('sexeModal').value,
+            ville: document.getElementById('villeModal').value,
+            niveau: document.getElementById('niveauModal').value,
+            boursier: document.getElementById('boursierModal').value === 'true',
+            revenus_mensuels: document.getElementById('revenusModal').value,
+            logement: document.getElementById('logementModal').value,
+            alimentation: document.getElementById('alimentationModal').value,
+            transports: document.getElementById('transportsModal').value,
+            loisirs: document.getElementById('loisirsModal').value,
+            etudes: document.getElementById('etudesModal').value,
+            autres: document.getElementById('autresModal').value
+        };
+        try {
+            const res = await fetch('/api/etudiants', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+            const json = await res.json();
+            const ab = document.getElementById('alertBoxModal');
+            ab.classList.remove('d-none');
+            if (res.ok) {
+                ab.className = 'alert alert-success mb-4';
+                ab.innerHTML = `✅ Étudiant enregistré ! Économies : ${json.economies}€`;
+                setTimeout(() => { bootstrap.Modal.getInstance(document.getElementById('collecteModal')).hide(); ab.classList.add('d-none'); }, 1500);
+                loadHeroStats();
+                if (dashboardLoaded) loadDashboard();
+                if (statistiquesLoaded) loadStatistiques();
+            } else { ab.className = 'alert alert-danger'; ab.innerHTML = `❌ ${json.error}`; }
+        } catch(e) { alert('Erreur de connexion'); }
+    });
+
+    async function loadHeroStats() {
+        try {
+            const resp = await fetch('/api/stats/descriptives');
+            const s = await resp.json();
+            if (s.total) {
+                document.getElementById('stat-etudiants').textContent = s.total;
+                document.getElementById('stat-depenses').textContent = (s.depenses_total?.moyenne || '—');
+                document.getElementById('stat-revenus').textContent = (s.revenus_mensuels?.moyenne || '—');
+                let ratio = s.depenses_total?.moyenne && s.revenus_mensuels?.moyenne ? (100 - (s.depenses_total.moyenne / s.revenus_mensuels.moyenne * 100)).toFixed(0) : '—';
+                document.getElementById('float-ratio').textContent = ratio + '%';
+                document.getElementById('float-top-cat').textContent = 'Logement';
+            }
+        } catch(e) {}
+    }
+
+    async function loadDashboard() {
+        try {
+            const resp = await fetch('/api/etudiants');
+            allEtudiants = await resp.json();
+            renderSummary();
+            loadCorrelation();
+            loadPie();
+            computeRegression();
+            renderList();
+        } catch(e) { console.error(e); }
+    }
+
+    function renderSummary() {
+        const total = allEtudiants.length;
+        const dep = allEtudiants.map(e=>e.depenses_total).filter(d=>d);
+        const rev = allEtudiants.map(e=>e.revenus_mensuels).filter(r=>r);
+        const avgDep = dep.length ? (dep.reduce((a,b)=>a+b,0)/dep.length).toFixed(0) : '—';
+        const avgRev = rev.length ? (rev.reduce((a,b)=>a+b,0)/rev.length).toFixed(0) : '—';
+        document.getElementById('summary-cards').innerHTML = `
+            <div class="col-md-3"><div class="card p-3 text-center"><h6>Total</h6><h3>${total}</h3></div></div>
+            <div class="col-md-3"><div class="card p-3 text-center"><h6>Dépenses</h6><h3>${avgDep}€</h3></div></div>
+            <div class="col-md-3"><div class="card p-3 text-center"><h6>Revenus</h6><h3>${avgRev}€</h3></div></div>
+            <div class="col-md-3"><div class="card p-3 text-center"><h6>Épargne</h6><h3>${avgRev!=='—'&&avgDep!=='—'?Math.round((avgRev-avgDep)/avgRev*100):'—'}%</h3></div></div>`;
+    }
+
+    async function loadCorrelation() {
+        try {
+            const resp = await fetch('/api/correlation');
+            const d = await resp.json();
+            if (d.error) return;
+            const trace = { z: d.matrix, x: d.variables, y: d.variables, type: 'heatmap', colorscale: 'Viridis' };
+            Plotly.newPlot('heatmapCorr', [trace], { height: 450, margin: { l: 100 } });
+        } catch(e) {}
+    }
+
+    function loadPie() {
+        if (!allEtudiants.length) return;
+        const cats = ['logement','alimentation','transports','loisirs','etudes','autres'];
+        const sums = cats.map(c => allEtudiants.reduce((s,e)=>s+(e[c]||0),0));
+        const trace = { labels: ['Logement','Alim.','Transp.','Loisirs','Études','Autres'], values: sums, type: 'pie', hole: 0.4 };
+        Plotly.newPlot('pieChart', [trace], { height: 450 });
+    }
+
+    function computeRegression() {
+        let data = allEtudiants.filter(e=>e.revenus_mensuels && e.depenses_total);
+        if (data.length<3) return;
+        let x = data.map(e=>e.revenus_mensuels), y = data.map(e=>e.depenses_total);
+        let n=x.length, sumX=x.reduce((a,b)=>a+b,0), sumY=y.reduce((a,b)=>a+b,0);
+        let sumXY=0, sumX2=0;
+        for(let i=0;i<n;i++) { sumXY+=x[i]*y[i]; sumX2+=x[i]*x[i]; }
+        let slope = (n*sumXY - sumX*sumY)/(n*sumX2 - sumX*sumX);
+        let intercept = (sumY - slope*sumX)/n;
+        let yPred = x.map(xi=>slope*xi+intercept);
+        let ssRes = y.reduce((acc,yi,i)=>acc+(yi-yPred[i])**2,0);
+        let ssTot = y.reduce((acc,yi)=>acc+(yi-sumY/n)**2,0);
+        let r2 = 1-ssRes/ssTot;
+        document.getElementById('lrResult').innerHTML = `Dépenses = ${slope.toFixed(3)}×Revenus + ${intercept.toFixed(0)} | R² = ${r2.toFixed(4)}`;
+        Plotly.newPlot('lrPlot', [{x, y, mode:'markers', marker:{color:'#818cf8'}}, {x, y:yPred, mode:'lines', line:{color:'#c084fc', width:3}}], {height:400});
+    }
+
+    window.runClassification = function() {
+        let data = allEtudiants.filter(e=>e.niveau && ['L1','L2','L3','M1','M2'].includes(e.niveau));
+        if(data.length<5) { document.getElementById('classifResult').innerHTML='Données insuffisantes'; return; }
+        let acc = {};
+        ['L1','L2','L3','M1','M2'].forEach(n=>{
+            let correct=0;
+            data.forEach(e=>{ let pred = (e.depenses_total/e.revenus_mensuels)>0.85?1:0; let truth = e.niveau===n?1:0; if(pred===truth) correct++; });
+            acc[n] = (correct/data.length*100).toFixed(0);
+        });
+        document.getElementById('classifResult').innerHTML = `Précision: L1:${acc.L1}% L2:${acc.L2}% L3:${acc.L3}% M1:${acc.M1}% M2:${acc.M2}%`;
+    };
+
+    window.runKMeans = function() {
+        let k = parseInt(document.getElementById('kValue').value);
+        let data = allEtudiants.filter(e=>e.revenus_mensuels && e.depenses_total);
+        if(data.length<k) return;
+        let points = data.map(e=>[e.revenus_mensuels, e.depenses_total]);
+        let centroids = points.slice(0,k).map(p=>[...p]);
+        let labels = new Array(points.length).fill(0);
+        for(let iter=0;iter<50;iter++){
+            for(let i=0;i<points.length;i++){
+                let best=0, min=Infinity;
+                for(let c=0;c<k;c++){ let d=Math.hypot(points[i][0]-centroids[c][0], points[i][1]-centroids[c][1]); if(d<min){min=d; best=c;} }
+                labels[i]=best;
+            }
+            let newC = Array(k).fill().map(()=>[0,0]), counts=Array(k).fill(0);
+            for(let i=0;i<points.length;i++){ let c=labels[i]; newC[c][0]+=points[i][0]; newC[c][1]+=points[i][1]; counts[c]++; }
+            for(let c=0;c<k;c++) if(counts[c]){ newC[c][0]/=counts[c]; newC[c][1]/=counts[c]; }
+            centroids=newC;
+        }
+        let traces = [];
+        let colors = ['#818cf8','#c084fc','#34d399','#fbbf24','#f87171'];
+        for(let c=0;c<k;c++){ let cluster = points.filter((_,i)=>labels[i]===c); traces.push({x:cluster.map(p=>p[0]), y:cluster.map(p=>p[1]), mode:'markers', name:`Cluster ${c+1}`, marker:{color:colors[c%colors.length]}}); }
+        Plotly.newPlot('kmeansPlot', traces, {title:`K-means (k=${k})`, xaxis:{title:'Revenus'}, yaxis:{title:'Dépenses'}, height:420});
+        document.getElementById('kmeansResult').innerHTML = `✅ ${k} clusters identifiés`;
+    };
+
+    function renderList() {
+        let html = `<table class="table table-dark table-hover"><thead><tr><th>Nom</th><th>Âge</th><th>Niveau</th><th>Revenus</th><th>Dépenses</th><th>Économies</th></tr></thead><tbody>`;
+        allEtudiants.forEach(e=>{ html += `<tr><td>${e.nom}</td><td>${e.age}</td><td>${e.niveau}</td><td>${e.revenus_mensuels}€</td><td>${e.depenses_total}€</td><td>${e.economies}€</td></tr>`; });
+        html += `</tbody></table>`;
+        document.getElementById('etudiantTableContainer').innerHTML = html;
+    }
+
+    window.filterEtudiants = function() {
+        let f = document.getElementById('etudiantSearch').value.toUpperCase();
+        let rows = document.querySelectorAll('#etudiantTableContainer table tbody tr');
+        rows.forEach(r=>{ let nom = r.cells[0]?.textContent.toUpperCase()||''; r.style.display = nom.includes(f)?'': 'none'; });
+    };
+
+    async function loadStatistiques() {
+        try {
+            const resp = await fetch('/api/stats/descriptives');
+            const s = await resp.json();
+            if(!s.total) { document.getElementById('stats-content').innerHTML='<p class="text-muted">Aucune donnée</p>'; return; }
+            let html = `<h5>📊 Statistiques</h5><table class="table table-dark"><thead><tr><th>Variable</th><th>Moyenne</th><th>Écart-type</th></tr></thead><tbody>
+                <tr><td>Revenus</td><td>${s.revenus_mensuels?.moyenne||'—'}€</td><td>${s.revenus_mensuels?.ecart_type||'—'}</td></tr>
+                <tr><td>Dépenses</td><td>${s.depenses_total?.moyenne||'—'}€</td><td>${s.depenses_total?.ecart_type||'—'}</td></tr>
+                <tr><td>Logement</td><td>${s.logement?.moyenne||'—'}€</td><td>${s.logement?.ecart_type||'—'}</td></tr>
+                <tr><td>Alimentation</td><td>${s.alimentation?.moyenne||'—'}€</td><td>${s.alimentation?.ecart_type||'—'}</td></tr>
+                <tr><td>Loisirs</td><td>${s.loisirs?.moyenne||'—'}€</td><td>${s.loisirs?.ecart_type||'—'}</td></tr>
+            </tbody></table>`;
+            if(s.par_sexe) html += `<div class="row mt-3"><div class="col-md-6"><div class="card p-3"><h6>Hommes</h6><p>Dépenses: ${s.par_sexe.hommes.depenses_moyennes}€</p></div></div>
+                <div class="col-md-6"><div class="card p-3"><h6>Femmes</h6><p>Dépenses: ${s.par_sexe.femmes.depenses_moyennes}€</p></div></div></div>`;
+            document.getElementById('stats-content').innerHTML = html;
+        } catch(e) { document.getElementById('stats-content').innerHTML = '<p class="text-danger">Erreur</p>'; }
+    }
+
+    window.addEventListener('load', () => { loadHeroStats(); });
+</script>
+</body>
+</html>
