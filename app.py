@@ -347,9 +347,8 @@ def serve_frontend():
         return "Le fichier index.html n'est pas présent.", 200
 
 
-
 if __name__ == "__main__":
-    # Récupère le port via Render, sinon utilise 5000 par défaut
+    init_data()
+    import os
     port = int(os.environ.get("PORT", 5000))
-    # On force l'hôte à 0.0.0.0
-    app.run(host='0.0.0.0', port=port)
+    app.run(debug=False, host='0.0.0.0', port=port)
