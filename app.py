@@ -26,15 +26,17 @@ def save_etudiants(etudiants):
     with open(DATA_FILE, "w", encoding="utf-8") as f:
         json.dump(etudiants, f, indent=2, ensure_ascii=False)
 
-# ---------- Utilitaires statistiques ----------
+# ---------- Utilitaires statistiques (sans numpy) ----------
 def compute_stats(values):
     if not values:
         return {}
     values_sorted = sorted(values)
     n = len(values)
     mean = sum(values) / n
+    # Variance et écart-type
     variance = sum((x - mean) ** 2 for x in values) / n
     std = math.sqrt(variance)
+    # Quartiles
     q1 = values_sorted[int(0.25 * n)] if n >= 4 else values_sorted[0]
     q2 = values_sorted[int(0.50 * n)] if n >= 2 else values_sorted[0]
     q3 = values_sorted[int(0.75 * n)] if n >= 4 else values_sorted[-1]
@@ -50,17 +52,20 @@ def compute_stats(values):
     }
 
 def pearson_corr(x, y):
+    """Calcul de corrélation de Pearson sans numpy"""
     n = len(x)
     if n < 2:
         return 0
     mean_x = sum(x) / n
     mean_y = sum(y) / n
+    
     num = sum((xi - mean_x) * (yi - mean_y) for xi, yi in zip(x, y))
-    den_x = sum((xi - mean_x) ** 2 for xi in x)
-    den_y = sum((yi - mean_y) ** 2 for yi in y)
+    den_x = math.sqrt(sum((xi - mean_x) ** 2 for xi in x))
+    den_y = math.sqrt(sum((yi - mean_y) ** 2 for yi in y))
+    
     if den_x == 0 or den_y == 0:
         return 0
-    return round(num / math.sqrt(den_x * den_y), 4)
+    return round(num / (den_x * den_y), 4)
 
 # ---------- Initialisation avec 20 données ----------
 def init_data():
@@ -166,7 +171,6 @@ def add_etudiant():
     etudiants = load_etudiants()
     new_id = max([e["id"] for e in etudiants], default=0) + 1
 
-    # Calcul du total des dépenses
     depenses_total = (
         float(data.get("logement", 0)) +
         float(data.get("alimentation", 0)) +
@@ -179,7 +183,6 @@ def add_etudiant():
     revenus = float(data["revenus_mensuels"])
     economies = round(revenus - depenses_total, 2)
     
-    # Déterminer la catégorie principale
     categories = {
         "logement": float(data.get("logement", 0)),
         "alimentation": float(data.get("alimentation", 0)),
@@ -189,8 +192,6 @@ def add_etudiant():
         "autres": float(data.get("autres", 0))
     }
     categorie_principale = max(categories, key=categories.get)
-
-    # Calcul du ratio dépenses/revenus
     ratio_depenses_revenus = round((depenses_total / revenus) * 100, 1) if revenus > 0 else None
 
     etudiant = {
@@ -236,11 +237,9 @@ def stats_descriptives():
     economies = [e["economies"] for e in etudiants if e.get("economies") is not None]
     ratios = [e["ratio_depenses_revenus"] for e in etudiants if e.get("ratio_depenses_revenus")]
 
-    # Statistiques par sexe
     hommes = [e for e in etudiants if e.get("sexe") == "M"]
     femmes = [e for e in etudiants if e.get("sexe") == "F"]
     
-    # Statistiques par niveau
     niveaux = {}
     for niveau in ["L1", "L2", "L3", "M1", "M2"]:
         etud_niveau = [e for e in etudiants if e.get("niveau") == niveau]
@@ -250,7 +249,6 @@ def stats_descriptives():
             "revenus_moyens": round(sum(e["revenus_mensuels"] for e in etud_niveau) / len(etud_niveau), 2) if etud_niveau else 0
         }
 
-    # Statistiques par bourse
     boursiers = [e for e in etudiants if e.get("boursier") is True]
     non_boursiers = [e for e in etudiants if e.get("boursier") is False]
 
@@ -338,47 +336,6 @@ def export_csv():
         as_attachment=True,
         download_name='export_depenses_etudiants.csv'
     )
-
-@app.route("/api/insights", methods=["GET"])
-def get_insights():
-    """Endpoint pour des insights supplémentaires"""
-    etudiants = load_etudiants()
-    if not etudiants:
-        return jsonify({"insights": []})
-    
-    insights = []
-    
-    # Calcul du ratio moyen
-    ratios = [e["ratio_depenses_revenus"] for e in etudiants if e.get("ratio_depenses_revenus")]
-    if ratios:
-        ratio_moyen = sum(ratios) / len(ratios)
-        if ratio_moyen > 100:
-            insights.append({"type": "warning", "message": "⚠️ Les étudiants dépensent en moyenne plus que leurs revenus - risque d'endettement"})
-        elif ratio_moyen > 85:
-            insights.append({"type": "warning", "message": "⚠️ Taux d'endettement élevé (>85%) - attention à la gestion budgétaire"})
-        else:
-            insights.append({"type": "success", "message": "✅ Ratio dépenses/revenus sain"})
-    
-    # Catégorie de dépense principale
-    categories = ["logement", "alimentation", "loisirs", "transports", "etudes"]
-    totals = {cat: sum(e.get(cat, 0) for e in etudiants) for cat in categories}
-    if totals:
-        top_cat = max(totals, key=totals.get)
-        cat_labels = {"logement": "Logement", "alimentation": "Alimentation", "loisirs": "Loisirs", "transports": "Transports", "etudes": "Études"}
-        insights.append({"type": "info", "message": f"🏠 La catégorie de dépense principale est : {cat_labels.get(top_cat, top_cat)}"})
-    
-    # Comparaison hommes/femmes
-    hommes = [e for e in etudiants if e.get("sexe") == "M"]
-    femmes = [e for e in etudiants if e.get("sexe") == "F"]
-    if hommes and femmes:
-        dep_h = sum(e["depenses_total"] for e in hommes) / len(hommes)
-        dep_f = sum(e["depenses_total"] for e in femmes) / len(femmes)
-        if dep_h > dep_f:
-            insights.append({"type": "info", "message": f"👨 Les hommes dépensent en moyenne {round(dep_h - dep_f, 0)}€ de plus que les femmes"})
-        else:
-            insights.append({"type": "info", "message": f"👩 Les femmes dépensent en moyenne {round(dep_f - dep_h, 0)}€ de plus que les hommes"})
-    
-    return jsonify({"insights": insights})
 
 @app.route("/")
 def serve_frontend():
