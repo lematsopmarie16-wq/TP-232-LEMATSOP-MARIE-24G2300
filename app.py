@@ -6,6 +6,7 @@ from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import csv
 import io
+import os
 
 app = Flask(__name__)
 CORS(app)
@@ -345,6 +346,10 @@ def serve_frontend():
     except FileNotFoundError:
         return "Le fichier index.html n'est pas présent.", 200
 
+
+
 if __name__ == "__main__":
-    init_data()
-    app.run(debug=True, port=5000)
+    # Récupère le port via Render, sinon utilise 5000 par défaut
+    port = int(os.environ.get("PORT", 5000))
+    # On force l'hôte à 0.0.0.0
+    app.run(host='0.0.0.0', port=port)
